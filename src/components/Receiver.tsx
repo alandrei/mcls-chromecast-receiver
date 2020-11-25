@@ -1,7 +1,10 @@
 import React, { Fragment, useRef, useEffect, useState } from "react";
 import { observer } from "mobx-react";
 import { ContentProtection } from "chromecast-caf-receiver/cast.framework";
-import { LoadRequestData } from "chromecast-caf-receiver/cast.framework.messages";
+import {
+  LiveSeekableRange,
+  LoadRequestData,
+} from "chromecast-caf-receiver/cast.framework.messages";
 import { AnnotationsStore } from "@mycujoo/player-mls";
 import EventStore from "../stores/EventStore";
 import Annotations from "../components/annotations";
@@ -10,6 +13,11 @@ import TotalViewers from "../components/TotalViewers";
 const context = cast.framework.CastReceiverContext.getInstance();
 const playerManager = context.getPlayerManager();
 const playbackConfig = new cast.framework.PlaybackConfig();
+
+interface LiveSeekableRangeComplete extends LiveSeekableRange {
+  start?: number;
+  end?: number;
+}
 
 type customDataType = {
   licenseUrl: string;
@@ -99,7 +107,11 @@ function App() {
         setCurrentTime(Math.floor(playerManager.getCurrentTimeSec()));
 
       if (playerManager.getDurationSec() === -1) {
-        setDuration(Math.floor(event.currentMediaTime));
+        const liveRange: LiveSeekableRangeComplete = playerManager.getLiveSeekableRange();
+        const duration =
+          (liveRange?.end || event.currentMediaTime) - (liveRange?.start || 0);
+
+        setDuration(Math.floor(duration));
       } else {
         duration !== playerManager.getDurationSec() &&
           setDuration(playerManager.getDurationSec());
